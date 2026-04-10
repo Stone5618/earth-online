@@ -1,3 +1,4 @@
+
 # 地球Online
 
 将现实生活比喻为大型多人在线角色扮演游戏(MMORPG)的Web应用！
@@ -54,12 +55,14 @@
 ### 安装依赖
 
 ```bash
+cd app
 npm install
 ```
 
 ### 启动开发服务器
 
 ```bash
+cd app
 npm run dev
 ```
 
@@ -68,12 +71,14 @@ npm run dev
 ### 构建生产版本
 
 ```bash
+cd app
 npm run build
 ```
 
 ### 代码检查
 
 ```bash
+cd app
 npm run lint
 ```
 
@@ -90,31 +95,12 @@ app/
 │   ├── components/
 │   │   ├── ui/              # shadcn/ui组件
 │   │   ├── game/            # 游戏专用组件
-│   │   │   ├── DeathScreen.tsx
-│   │   │   ├── DecisionPanel.tsx
-│   │   │   ├── GameHUD.tsx
-│   │   │   ├── LogStream.tsx
-│   │   │   ├── SpawnTransition.tsx
-│   │   │   └── StatPanel.tsx
 │   │   ├── ParticleBackground.tsx
 │   │   ├── GlassCard.tsx
 │   │   ├── TypewriterText.tsx
 │   │   ├── AnimatedNumber.tsx
-│   │   ├── SpawnModal.tsx
 │   │   └── GlowingButton.tsx
 │   ├── sections/            # 页面Section
-│   │   ├── Header.tsx
-│   │   ├── Hero.tsx
-│   │   ├── ServerStatus.tsx
-│   │   ├── CharacterCreation.tsx
-│   │   ├── MainQuestline.tsx
-│   │   ├── OpenWorld.tsx
-│   │   ├── SkillTree.tsx
-│   │   ├── Economy.tsx
-│   │   ├── Guilds.tsx
-│   │   ├── RNGEvents.tsx
-│   │   ├── WinConditions.tsx
-│   │   └── Footer.tsx
 │   ├── game/                # 游戏逻辑
 │   │   ├── GameContext.tsx
 │   │   └── gameState.ts
@@ -163,3 +149,4 @@ app/
 ## 许可证
 
 MIT License
+
