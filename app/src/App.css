@@ -1,0 +1,53 @@
+/* App-specific styles */
+
+/* Smooth scrolling for the entire page */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom selection color */
+::selection {
+  background: rgba(0, 210, 255, 0.3);
+  color: white;
+}
+
+/* Ensure sections have proper spacing */
+section {
+  position: relative;
+}
+
+/* Glass card enhancements */
+.glass-card {
+  will-change: transform;
+}
+
+/* Animation performance */
+.animate-pulse-glow,
+.animate-float,
+.animate-spin-slow,
+.animate-shimmer {
+  will-change: transform, opacity;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .section-title {
+    font-size: 1.75rem;
+  }
+  
+  .section-subtitle {
+    font-size: 0.875rem;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
