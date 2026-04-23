@@ -8,10 +8,11 @@ interface ChoiceResultModalProps {
   onClose: () => void;
   choiceText: string;
   statChanges: Partial<PlayerStats>;
+  followUp?: string;
 }
 
 export function ChoiceResultModal(props: ChoiceResultModalProps) {
-  const { isOpen, onClose, choiceText, statChanges } = props;
+  const { isOpen, onClose, choiceText, statChanges, followUp } = props;
   
   if (!isOpen) return null;
 
@@ -91,6 +92,15 @@ export function ChoiceResultModal(props: ChoiceResultModalProps) {
                 </div>
               </div>
 
+              {followUp && (
+                <div className="mb-6">
+                  <p className="text-white/50 text-sm mb-3">结果</p>
+                  <div className="p-4 rounded-xl bg-holo-blue/5 border border-holo-blue/10">
+                    <p className="text-white leading-relaxed">{followUp}</p>
+                  </div>
+                </div>
+              )}
+              
               {hasChanges && (
                 <div className="mb-6">
                   <p className="text-white/50 text-sm mb-3">属性变化</p>

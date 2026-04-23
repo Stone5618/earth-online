@@ -1,3 +1,4 @@
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, X } from 'lucide-react';
 import { useGame } from '@/game/GameContext';
@@ -9,6 +10,27 @@ interface AchievementPanelProps {
 
 export function AchievementPanel({ isOpen, onClose }: AchievementPanelProps) {
   const { state } = useGame();
+  const [touchStart, setTouchStart] = React.useState({ x: 0, y: 0 });
+  const [touchEnd, setTouchEnd] = React.useState({ x: 0, y: 0 });
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  };
+
+  const handleTouchEnd = () => {
+    const dx = touchEnd.x - touchStart.x;
+    const dy = touchEnd.y - touchStart.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // 当滑动距离超过30px时关闭面板
+    if (distance > 30) {
+      onClose();
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -34,6 +56,9 @@ export function AchievementPanel({ isOpen, onClose }: AchievementPanelProps) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             >
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
@@ -43,7 +68,7 @@ export function AchievementPanel({ isOpen, onClose }: AchievementPanelProps) {
               </div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                className="p-2 min-h-[44px] min-w-[44px] rounded-lg hover:bg-white/10 transition-colors flex items-center justify-center"
               >
                 <X className="w-6 h-6 text-white/60" />
               </button>

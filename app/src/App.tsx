@@ -1,30 +1,34 @@
-import { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { Suspense, lazy, useState } from 'react';
+import { AnimatePresence, MotionConfig } from 'framer-motion';
 import { GameProvider, useGame } from '@/game/GameContext';
 import { generateFamilyTier, generateInitialStats } from '@/game/gameState';
+import { Loading } from '@/components/Loading';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ParticleBackground } from '@/components/ParticleBackground';
 import { Header } from '@/sections/Header';
 import { Hero } from '@/sections/Hero';
-import { ServerStatus } from '@/sections/ServerStatus';
-import { CharacterCreation } from '@/sections/CharacterCreation';
-import { MainQuestline } from '@/sections/MainQuestline';
-import { OpenWorld } from '@/sections/OpenWorld';
-import { SkillTree } from '@/sections/SkillTree';
-import { Economy } from '@/sections/Economy';
-import { Guilds } from '@/sections/Guilds';
-import { RNGEvents } from '@/sections/RNGEvents';
-import { WinConditions } from '@/sections/WinConditions';
 import { Footer } from '@/sections/Footer';
-import { GameHUD } from '@/components/game/GameHUD';
-import { SpawnTransition } from '@/components/game/SpawnTransition';
-import { AchievementNotificationProvider } from '@/components/game/AchievementNotification';
-import { ToastProvider } from '@/components/game/ToastNotification';
-import { SoundProvider } from '@/components/game/SoundManager';
-import { SaveSlotPanel } from '@/components/game/SaveSlotPanel';
-import { SettingsPanel } from '@/components/game/SettingsPanel';
 import { Settings, Play } from 'lucide-react';
-import { SurvivalGuide } from '@/sections/SurvivalGuide';
 import './App.css';
+
+// Lazy loading components
+const ServerStatus = lazy(() => import('@/sections/ServerStatus').then(m => ({ default: m.ServerStatus })));
+const CharacterCreation = lazy(() => import('@/sections/CharacterCreation').then(m => ({ default: m.CharacterCreation })));
+const MainQuestline = lazy(() => import('@/sections/MainQuestline').then(m => ({ default: m.MainQuestline })));
+const OpenWorld = lazy(() => import('@/sections/OpenWorld').then(m => ({ default: m.OpenWorld })));
+const SkillTree = lazy(() => import('@/sections/SkillTree').then(m => ({ default: m.SkillTree })));
+const Economy = lazy(() => import('@/sections/Economy').then(m => ({ default: m.Economy })));
+const Guilds = lazy(() => import('@/sections/Guilds').then(m => ({ default: m.Guilds })));
+const RNGEvents = lazy(() => import('@/sections/RNGEvents').then(m => ({ default: m.RNGEvents })));
+const WinConditions = lazy(() => import('@/sections/WinConditions').then(m => ({ default: m.WinConditions })));
+const GameHUD = lazy(() => import('@/components/game/GameHUD').then(m => ({ default: m.GameHUD })));
+const SpawnTransition = lazy(() => import('@/components/game/SpawnTransition').then(m => ({ default: m.SpawnTransition })));
+const AchievementNotificationProvider = lazy(() => import('@/components/game/AchievementNotification').then(m => ({ default: m.AchievementNotificationProvider })));
+const SaveSlotPanel = lazy(() => import('@/components/game/SaveSlotPanel').then(m => ({ default: m.SaveSlotPanel })));
+const SettingsPanel = lazy(() => import('@/components/game/SettingsPanel').then(m => ({ default: m.SettingsPanel })));
+const SurvivalGuide = lazy(() => import('@/sections/SurvivalGuide').then(m => ({ default: m.SurvivalGuide })));
+const ToastProvider = lazy(() => import('@/components/game/ToastNotification').then(m => ({ default: m.ToastProvider })));
+const SoundProvider = lazy(() => import('@/components/game/SoundManager').then(m => ({ default: m.SoundProvider })));
 
 // Predefined servers and talents
 const servers = [
@@ -52,7 +56,7 @@ const talents = [
 
 // Main game content component
 function GameContent() {
-  const { state, startSpawning, completeSpawning } = useGame();
+  const { state, startSpawning } = useGame();
   const [isSavePanelOpen, setIsSavePanelOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
@@ -69,19 +73,29 @@ function GameContent() {
 
   return (
     <div className="relative min-h-screen bg-deep-space text-white overflow-x-hidden">
-      {/* Achievement Notification */}
-      <AchievementNotificationProvider />
+      {/* Achievement Notification (always load) */}
+      <Suspense fallback={<Loading />}>
+        <AchievementNotificationProvider />
+      </Suspense>
       
       {/* Particle Background - only show in landing phase */}
       {state.phase === 'LANDING' && <ParticleBackground />}
       
       {/* Spawn Transition */}
       <AnimatePresence>
-        {state.phase === 'SPAWNING' && <SpawnTransition />}
+        {state.phase === 'SPAWNING' && (
+          <Suspense fallback={<Loading />}>
+            <SpawnTransition />
+          </Suspense>
+        )}
       </AnimatePresence>
 
       {/* Game HUD - only show in playing or gameover phase */}
-      {(state.phase === 'PLAYING' || state.phase === 'GAMEOVER') && <GameHUD />}
+      {(state.phase === 'PLAYING' || state.phase === 'GAMEOVER') && (
+        <Suspense fallback={<Loading />}>
+          <GameHUD />
+        </Suspense>
+      )}
 
       {/* Landing Page Content */}
       {state.phase === 'LANDING' && (
@@ -109,31 +123,35 @@ function GameContent() {
           </div>
           
           {/* Panels */}
-          <SaveSlotPanel
-            isOpen={isSavePanelOpen}
-            onClose={() => setIsSavePanelOpen(false)}
-            mode={savePanelMode}
-          />
-          <SettingsPanel
-            isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-          />
-          <SurvivalGuide
-            isOpen={isGuideOpen}
-            onClose={() => setIsGuideOpen(false)}
-          />
+          <Suspense fallback={<Loading />}>
+            <SaveSlotPanel
+              isOpen={isSavePanelOpen}
+              onClose={() => setIsSavePanelOpen(false)}
+              mode={savePanelMode}
+            />
+            <SettingsPanel
+              isOpen={isSettingsOpen}
+              onClose={() => setIsSettingsOpen(false)}
+            />
+            <SurvivalGuide
+              isOpen={isGuideOpen}
+              onClose={() => setIsGuideOpen(false)}
+            />
+          </Suspense>
           
           <main className="relative z-10">
             <Hero onSpawnClick={handleSpawn} onGuideClick={() => setIsGuideOpen(true)} />
-            <ServerStatus />
-            <CharacterCreation />
-            <MainQuestline />
-            <OpenWorld />
-            <SkillTree />
-            <Economy />
-            <Guilds />
-            <RNGEvents />
-            <WinConditions />
+            <Suspense fallback={<Loading />}>
+              <ServerStatus />
+              <CharacterCreation />
+              <MainQuestline />
+              <OpenWorld />
+              <SkillTree />
+              <Economy />
+              <Guilds />
+              <RNGEvents />
+              <WinConditions />
+            </Suspense>
           </main>
           
           <Footer />
@@ -145,13 +163,21 @@ function GameContent() {
 
 function App() {
   return (
-    <GameProvider>
-      <SoundProvider>
-        <ToastProvider>
-          <GameContent />
-        </ToastProvider>
-      </SoundProvider>
-    </GameProvider>
+    <ErrorBoundary>
+      <MotionConfig reducedMotion="user">
+        <GameProvider>
+          <Suspense fallback={<Loading />}>
+            <SoundProvider>
+              <Suspense fallback={<Loading />}>
+                <ToastProvider>
+                  <GameContent />
+                </ToastProvider>
+              </Suspense>
+            </SoundProvider>
+          </Suspense>
+        </GameProvider>
+      </MotionConfig>
+    </ErrorBoundary>
   );
 }
 

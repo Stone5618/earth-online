@@ -1,7 +1,8 @@
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Heart, Zap, Coins, Smile, Frown, Brain, Sparkles, Palette, Clover, Save, Home, Settings, Server, Star, HeartPulse, Users, Crown, User } from 'lucide-react';
 import { useGame } from '@/game/GameContext';
-import { useState } from 'react';
+import { formatMoney, STAT_BOUNDS } from '@/game/gameState';
 import { AchievementPanel } from './AchievementPanel';
 import { useToast } from './ToastNotification';
 import { SaveSlotPanel } from './SaveSlotPanel';
@@ -16,27 +17,28 @@ interface StatBarProps {
   color: string;
   showValue?: boolean;
   prefix?: string;
+  displayValue?: string;
 }
 
-function StatBar({ icon: Icon, label, value, max, color, showValue = true, prefix = '' }: StatBarProps) {
+function StatBar({ icon: Icon, label, value, max, color, showValue = true, prefix = '', displayValue }: StatBarProps) {
   const percentage = Math.max(0, Math.min(100, (value / max) * 100));
   const isLow = percentage < 30;
   const isCritical = percentage < 15;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1 sm:space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Icon className="w-4 h-4" style={{ color }} />
-          <span className="text-white/70 text-sm">{label}</span>
+          <span className="text-white/70 text-xs sm:text-sm">{label}</span>
         </div>
         {showValue && (
-          <span className={`text-sm font-mono ${isCritical ? 'text-fatal-red animate-pulse' : 'text-white'}`}>
-            {prefix}{value.toLocaleString()}
+          <span className={`text-xs sm:text-sm font-mono ${isCritical ? 'text-fatal-red animate-pulse' : 'text-white'}`}>
+            {prefix}{displayValue ?? value.toLocaleString()}
           </span>
         )}
       </div>
-      <div className="relative h-3 bg-white/10 rounded-full overflow-hidden">
+      <div className="relative h-2 sm:h-3 bg-white/10 rounded-full overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0 rounded-full" />
         
@@ -87,17 +89,17 @@ interface ProfileCardProps {
 function ProfileCard({ icon: Icon, title, value, description, iconColor = '#00D2FF' }: ProfileCardProps) {
   return (
     <motion.div 
-      className="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-white/20 transition-all"
+      className="bg-white/5 rounded-xl p-3 sm:p-4 border border-white/10 hover:border-white/20 transition-all"
       whileHover={{ scale: 1.02 }}
       transition={{ type: 'spring', stiffness: 300 }}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2 sm:gap-3">
         <div className="p-2 rounded-lg" style={{ backgroundColor: `${iconColor}20` }}>
-          <Icon className="w-5 h-5" style={{ color: iconColor }} />
+          <Icon className="w-4 sm:w-5 h-4 sm:h-5" style={{ color: iconColor }} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-white/50 text-xs mb-1">{title}</p>
-          <p className="text-white font-medium truncate">{value}</p>
+          <p className="text-white font-medium truncate text-sm sm:text-base">{value}</p>
           {description && (
             <p className="text-white/40 text-xs mt-1">{description}</p>
           )}
@@ -107,7 +109,7 @@ function ProfileCard({ icon: Icon, title, value, description, iconColor = '#00D2
   );
 }
 
-export function StatPanel() {
+export const StatPanel = React.memo(() => {
   const { state, dispatch } = useGame();
   const { stats } = state;
   const [isAchievementPanelOpen, setIsAchievementPanelOpen] = useState(false);
@@ -127,17 +129,17 @@ export function StatPanel() {
 
   return (
     <>
-      <div className="glass-card p-6 space-y-6">
-      <h3 className="text-lg font-bold text-white flex items-center gap-2">
+      <div className="glass-card p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
         <Sparkles className="w-5 h-5 text-holo-blue" />
         状态监测
       </h3>
 
       {/* Age Display */}
-      <div className="text-center p-4 rounded-xl bg-white/5">
-        <span className="text-white/50 text-sm">当前年龄</span>
+      <div className="text-center p-3 sm:p-4 rounded-xl bg-white/5">
+        <span className="text-white/50 text-xs sm:text-sm">当前年龄</span>
         <motion.div 
-          className="text-4xl font-orbitron font-bold text-holo-blue"
+          className="text-3xl sm:text-4xl font-orbitron font-bold text-holo-blue"
           key={stats.age}
           initial={{ scale: 1.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -149,13 +151,13 @@ export function StatPanel() {
 
       {/* Player Profile Section */}
       {(state.birthServer || state.birthTalent || state.familyTier) && (
-        <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-white/80 flex items-center gap-2">
+        <div className="space-y-3 sm:space-y-4">
+          <h4 className="text-xs sm:text-sm font-semibold text-white/80 flex items-center gap-2">
             <User className="w-4 h-4 text-holo-purple" />
             玩家档案
           </h4>
           
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-1 gap-2 sm:gap-3">
             {state.birthServer && (
               <ProfileCard
                 icon={Server}
@@ -211,7 +213,7 @@ export function StatPanel() {
       )}
 
       {/* Stats */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <StatBar
           icon={Heart}
           label="健康值"
@@ -236,6 +238,7 @@ export function StatPanel() {
           color="#FFD700"
           showValue={true}
           prefix="¥"
+          displayValue={formatMoney(stats.money)}
         />
         
         <StatBar
@@ -250,7 +253,7 @@ export function StatPanel() {
           icon={Brain}
           label="智力"
           value={stats.intelligence}
-          max={150}
+          max={STAT_BOUNDS.intelligence.max}
           color="#00D2FF"
         />
         
@@ -258,7 +261,7 @@ export function StatPanel() {
           icon={Palette}
           label="创造力"
           value={stats.creativity}
-          max={150}
+          max={STAT_BOUNDS.creativity.max}
           color="#FF69B4"
         />
         
@@ -266,7 +269,7 @@ export function StatPanel() {
           icon={Clover}
           label="运气"
           value={stats.luck}
-          max={100}
+          max={STAT_BOUNDS.luck.max}
           color="#00FF88"
         />
         
@@ -274,7 +277,7 @@ export function StatPanel() {
           icon={Sparkles}
           label="魅力"
           value={stats.charm}
-          max={100}
+          max={STAT_BOUNDS.charm.max}
           color="#FF1493"
         />
       </div>
@@ -282,10 +285,10 @@ export function StatPanel() {
 
       
       {/* Action Buttons */}
-      <div className="pt-4 border-t border-white/10 space-y-3">
+      <div className="pt-4 border-t border-white/10 space-y-2 sm:space-y-3">
         <button
           onClick={() => setIsAchievementPanelOpen(true)}
-          className="w-full py-3 bg-gold/10 border border-gold/30 rounded-lg text-gold hover:bg-gold/20 transition-all flex items-center justify-center gap-2"
+          className="w-full py-3 min-h-[44px] bg-gold/10 border border-gold/30 rounded-lg text-gold hover:bg-gold/20 transition-all flex items-center justify-center gap-2 text-sm"
         >
           <Trophy className="w-4 h-4" />
           成就 ({state.achievements.filter(a => a.unlocked).length}/{state.achievements.length})
@@ -295,7 +298,7 @@ export function StatPanel() {
             setIsSavePanelOpen(true);
             playSound('click');
           }}
-          className="w-full py-3 bg-holo-blue/20 border border-holo-blue/50 rounded-lg text-holo-blue hover:bg-holo-blue/30 transition-all flex items-center justify-center gap-2"
+          className="w-full py-3 min-h-[44px] bg-holo-blue/20 border border-holo-blue/50 rounded-lg text-holo-blue hover:bg-holo-blue/30 transition-all flex items-center justify-center gap-2 text-sm"
         >
           <Save className="w-4 h-4" />
           保存进度
@@ -306,7 +309,7 @@ export function StatPanel() {
             setIsSettingsOpen(true);
             playSound('click');
           }}
-          className="w-full py-3 bg-white/5 border border-white/20 rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2"
+          className="w-full py-3 min-h-[44px] bg-white/5 border border-white/20 rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2 text-sm"
         >
           <Settings className="w-4 h-4" />
           设置
@@ -318,7 +321,7 @@ export function StatPanel() {
             showToast('已返回主菜单', 'info');
             playSound('click');
           }}
-          className="w-full py-3 bg-white/5 border border-white/20 rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2"
+          className="w-full py-3 min-h-[44px] bg-white/5 border border-white/20 rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2 text-sm"
         >
           <Home className="w-4 h-4" />
           返回主菜单
@@ -342,4 +345,4 @@ export function StatPanel() {
     />
     </>
   );
-}
+});

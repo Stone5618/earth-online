@@ -308,7 +308,7 @@ export function SpawnTransition() {
       {/* Corner decorations */}
       <div className="absolute top-4 left-4 text-white/20 font-mono text-xs">
         <p>SYS.REINCARNATION</p>
-        <p>v4.6B.2024</p>
+        <p>v1.0.2024</p>
       </div>
       <div className="absolute bottom-4 right-4 text-white/20 font-mono text-xs text-right">
         <p>SERVER: ASIA-EAST</p>

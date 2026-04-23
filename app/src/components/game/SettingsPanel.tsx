@@ -1,3 +1,4 @@
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Settings, Volume2, VolumeX, Save, RotateCcw } from 'lucide-react';
 import { useToast } from './ToastNotification';
@@ -13,6 +14,27 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const { showToast } = useToast();
   const { isSoundEnabled, toggleSound } = useSound();
   const { state, setDifficulty: setGameDifficulty } = useGame();
+  const [touchStart, setTouchStart] = React.useState({ x: 0, y: 0 });
+  const [touchEnd, setTouchEnd] = React.useState({ x: 0, y: 0 });
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  };
+
+  const handleTouchEnd = () => {
+    const dx = touchEnd.x - touchStart.x;
+    const dy = touchEnd.y - touchStart.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // 当滑动距离超过30px时关闭面板
+    if (distance > 30) {
+      onClose();
+    }
+  };
 
   const saveSettings = () => {
     showToast('设置已保存！', 'success');
@@ -46,10 +68,15 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             exit={{ opacity: 0, scale: 0.9, y: 50 }}
             className="fixed inset-0 z-[2001] flex items-center justify-center p-4"
           >
-            <div className="glass-card p-6 relative w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <div 
+              className="glass-card p-6 relative w-full max-w-md max-h-[80vh] overflow-y-auto"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-colors"
+                className="absolute top-4 right-4 p-2 min-h-[44px] min-w-[44px] rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"
               >
                 <X className="w-5 h-5 text-white/60" />
               </button>
@@ -75,9 +102,9 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   </div>
                   <button
                     onClick={toggleSound}
-                    className={`w-14 h-8 rounded-full transition-all relative ${
+                    className={`w-14 min-h-[44px] rounded-full transition-all relative ${
                       isSoundEnabled ? 'bg-green-500/30 border-green-500/50' : 'bg-white/10 border-white/20'
-                    } border`}
+                    } border flex items-center`}
                   >
                     <div
                       className={`absolute top-1 w-6 h-6 rounded-full bg-white transition-all ${
@@ -99,7 +126,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                       <button
                         key={d.id}
                         onClick={() => setGameDifficulty(d.id as any)}
-                        className={`p-3 rounded-lg text-center transition-all ${
+                        className={`p-3 min-h-[44px] rounded-lg text-center transition-all ${
                           state.difficulty === d.id
                             ? 'bg-holo-blue/30 border-holo-blue/50 text-holo-blue'
                             : 'bg-white/5 border-white/20 text-white/60 hover:bg-white/10'
@@ -116,7 +143,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 <div className="flex gap-3 pt-4">
                   <button
                     onClick={resetSettings}
-                    className="flex-1 py-3 rounded-lg bg-white/5 border border-white/20 text-white/60 hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2"
+                    className="flex-1 py-3 min-h-[44px] rounded-lg bg-white/5 border border-white/20 text-white/60 hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2"
                   >
                     <RotateCcw className="w-4 h-4" />
                     重置
@@ -126,7 +153,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                       saveSettings();
                       onClose();
                     }}
-                    className="flex-1 py-3 rounded-lg bg-holo-blue/20 border border-holo-blue/50 text-holo-blue hover:bg-holo-blue/30 transition-all flex items-center justify-center gap-2"
+                    className="flex-1 py-3 min-h-[44px] rounded-lg bg-holo-blue/20 border border-holo-blue/50 text-holo-blue hover:bg-holo-blue/30 transition-all flex items-center justify-center gap-2"
                   >
                     <Save className="w-4 h-4" />
                     保存

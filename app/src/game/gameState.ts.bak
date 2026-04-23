@@ -15,21 +15,11 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-export function limitChange(value: number, isMoney: boolean = false): number {
-  if (isMoney) {
-    // 金钱单独设置高限制
-    if (value > 0) {
-      return Math.min(value, 1000000);
-    } else {
-      return Math.max(value, -1000000);
-    }
+export function limitChange(value: number, maxIncrease: number = 30, maxDecrease: number = 30): number {
+  if (value > 0) {
+    return Math.min(value, maxIncrease);
   } else {
-    // 普通属性保持 ±30
-    if (value > 0) {
-      return Math.min(value, 30);
-    } else {
-      return Math.max(value, -30);
-    }
+    return Math.max(value, -maxDecrease);
   }
 }
 
@@ -324,89 +314,63 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return Math.round(value * (isPositive ? diff.positive : diff.negative));
       };
       
-      // 获取原始变化值
-      const rawHealthChange = action.payload.statChanges.health || 0;
-      const rawEnergyChange = action.payload.statChanges.energy || 0;
-      const rawMoneyChange = action.payload.statChanges.money || 0;
-      const rawMoodChange = action.payload.statChanges.mood || 0;
-      const rawIntelligenceChange = action.payload.statChanges.intelligence || 0;
-      const rawCharmChange = action.payload.statChanges.charm || 0;
-      const rawCreativityChange = action.payload.statChanges.creativity || 0;
-      const rawLuckChange = action.payload.statChanges.luck || 0;
-      const rawKarmaChange = action.payload.statChanges.karma || 0;
+      const healthChange = limitChange(action.payload.statChanges.health || 0);
+      const energyChange = limitChange(action.payload.statChanges.energy || 0);
+      const moneyChange = limitChange(action.payload.statChanges.money || 0);
+      const moodChange = limitChange(action.payload.statChanges.mood || 0);
+      const intelligenceChange = limitChange(action.payload.statChanges.intelligence || 0);
+      const charmChange = limitChange(action.payload.statChanges.charm || 0);
+      const creativityChange = limitChange(action.payload.statChanges.creativity || 0);
+      const luckChange = limitChange(action.payload.statChanges.luck || 0);
+      const karmaChange = limitChange(action.payload.statChanges.karma || 0);
       const isMarriedChange = action.payload.statChanges.isMarried;
       
-      // 先 applyDiff 难度调整
-      const healthAfterDiff = applyDiff(rawHealthChange, rawHealthChange > 0);
-      const energyAfterDiff = applyDiff(rawEnergyChange, rawEnergyChange > 0);
-      const moneyAfterDiff = applyDiff(rawMoneyChange, rawMoneyChange > 0);
-      const moodAfterDiff = applyDiff(rawMoodChange, rawMoodChange > 0);
-      const intelligenceAfterDiff = applyDiff(rawIntelligenceChange, rawIntelligenceChange > 0);
-      const charmAfterDiff = applyDiff(rawCharmChange, rawCharmChange > 0);
-      const creativityAfterDiff = applyDiff(rawCreativityChange, rawCreativityChange > 0);
-      const luckAfterDiff = applyDiff(rawLuckChange, rawLuckChange > 0);
-      const karmaAfterDiff = applyDiff(rawKarmaChange, rawKarmaChange > 0);
-      
-      // 再 limitChange 限制单次变化量
-      const healthChange = limitChange(healthAfterDiff, false);
-      const energyChange = limitChange(energyAfterDiff, false);
-      const moneyChange = limitChange(moneyAfterDiff, true);
-      const moodChange = limitChange(moodAfterDiff, false);
-      const intelligenceChange = limitChange(intelligenceAfterDiff, false);
-      const charmChange = limitChange(charmAfterDiff, false);
-      const creativityChange = limitChange(creativityAfterDiff, false);
-      const luckChange = limitChange(luckAfterDiff, false);
-      const karmaChange = limitChange(karmaAfterDiff, false);
-      
-      // 计算总健康变化（事件+能量耗尽+年龄）
-      const totalHealthChange = healthChange +
-        (state.stats.energy <= 0 ? -10 : 0) +
-        (newAge >= 35 ? -2 : 0);
-      
       const newHealth = clamp(
-        state.stats.health + totalHealthChange,
+        state.stats.health +
+          applyDiff(healthChange, healthChange > 0) +
+          (state.stats.energy <= 0 ? -10 : 0) +
+          (newAge >= 35 ? -2 : 0),
         STAT_BOUNDS.health.min,
         Math.max(state.stats.maxHealth, STAT_BOUNDS.health.max)
       );
       const newEnergy = clamp(
-        state.stats.energy + energyChange + 20,
+        state.stats.energy + applyDiff(energyChange, energyChange > 0) + 20,
         STAT_BOUNDS.energy.min,
         Math.max(state.stats.maxEnergy, STAT_BOUNDS.energy.max)
       );
       const newMoney = clamp(
-        state.stats.money + moneyChange,
+        state.stats.money + applyDiff(moneyChange, moneyChange > 0),
         STAT_BOUNDS.money.min,
         STAT_BOUNDS.money.max
       );
-      // totalMoneyEarned 使用经过难度调整但未被 limitChange 限制的值（不过被 clamp 影响没关系）
-      const newTotalMoneyEarned = state.stats.totalMoneyEarned + Math.max(0, moneyAfterDiff);
+      const newTotalMoneyEarned = state.stats.totalMoneyEarned + Math.max(0, applyDiff(moneyChange, moneyChange > 0));
       const newMood = clamp(
-        state.stats.mood + moodChange,
+        state.stats.mood + applyDiff(moodChange, moodChange > 0),
         STAT_BOUNDS.mood.min,
         STAT_BOUNDS.mood.max
       );
       const newIntelligence = clamp(
-        state.stats.intelligence + intelligenceChange,
+        state.stats.intelligence + applyDiff(intelligenceChange, intelligenceChange > 0),
         STAT_BOUNDS.intelligence.min,
         STAT_BOUNDS.intelligence.max
       );
       const newCharm = clamp(
-        state.stats.charm + charmChange,
+        state.stats.charm + applyDiff(charmChange, charmChange > 0),
         STAT_BOUNDS.charm.min,
         STAT_BOUNDS.charm.max
       );
       const newCreativity = clamp(
-        state.stats.creativity + creativityChange,
+        state.stats.creativity + applyDiff(creativityChange, creativityChange > 0),
         STAT_BOUNDS.creativity.min,
         STAT_BOUNDS.creativity.max
       );
       const newLuck = clamp(
-        state.stats.luck + luckChange,
+        state.stats.luck + applyDiff(luckChange, luckChange > 0),
         STAT_BOUNDS.luck.min,
         STAT_BOUNDS.luck.max
       );
       const newKarma = clamp(
-        state.stats.karma + karmaChange,
+        state.stats.karma + applyDiff(karmaChange, karmaChange > 0),
         STAT_BOUNDS.karma.min,
         STAT_BOUNDS.karma.max
       );
@@ -683,13 +647,9 @@ export type StatChanges = Partial<PlayerStats> | ((stats: PlayerStats) => Partia
 export interface GameEventChoice {
   text: ChoiceText;
   statChanges: StatChanges;
-  // 扩展: followUp 可以是 string 或函数
-  followUp?: string | ((stats: Partial<PlayerStats>) => string);
+  followUp?: string;
   resultMessage?: string;
   eventType?: GameLog['type'];
-  // 新增: 禁用选项相关
-  disabled?: ((stats: PlayerStats) => boolean) | boolean;
-  disabledReason?: string;
 }
 
 export interface GameEvent {
@@ -726,7 +686,6 @@ export const eventLibrary: GameEvent[] = [
     maxAge: 0,
     text: '【出生】你刚来到这个世界，响亮地啼哭！',
     eventType: 'milestone',
-    weight: 10,
     choices: [
       { text: '大声哭闹', statChanges: { mood: -5, health: 2 }, followUp: '你用哭声宣告了自己的存在。' },
       { text: '安静观察', statChanges: { intelligence: 2, mood: 5 }, followUp: '你好奇地观察着这个新世界。' },
@@ -738,10 +697,9 @@ export const eventLibrary: GameEvent[] = [
     maxAge: 1,
     text: '你一岁了，开始牙牙学语。',
     eventType: 'milestone',
-    weight: 10,
     choices: [
-      { text: '先叫"妈妈"', statChanges: { charm: 5, mood: 8, karma: 5, health: 2 }, followUp: '妈妈很开心，全家都乐了。' },
-      { text: '先叫"爸爸"', statChanges: { intelligence: 4, mood: 6, karma: 3 }, followUp: '爸爸激动地抱起了你。' },
+      { text: '先叫"妈妈"', statChanges: { charm: 3, karma: 5 }, followUp: '妈妈很开心，全家都乐了。' },
+      { text: '先叫"爸爸"', statChanges: { intelligence: 2, mood: 5 }, followUp: '爸爸激动地抱起了你。' },
     ],
   },
   {
@@ -833,10 +791,9 @@ export const eventLibrary: GameEvent[] = [
     minAge: 7,
     maxAge: 12,
     text: '你考试考了100分，老师表扬了你！',
-    weight: 10,
     choices: [
-      { text: '开心炫耀', statChanges: { charm: 3, intelligence: 2, mood: 15, karma: -5 }, followUp: '你很开心，但同学觉得你有点骄傲。' },
-      { text: '谦虚感谢', statChanges: { charm: 5, karma: 10, intelligence: 3, mood: 8 }, followUp: '大家都觉得你是个好学生。' },
+      { text: '开心炫耀', statChanges: { charm: -2, intelligence: 2, mood: 10, karma: -3 }, followUp: '你很开心，但同学觉得你有点骄傲。' },
+      { text: '谦虚感谢', statChanges: { charm: 5, karma: 5, intelligence: 3 }, followUp: '大家都觉得你是个好学生。' },
     ],
   },
   {
@@ -1022,24 +979,7 @@ export const eventLibrary: GameEvent[] = [
     condition: (stats, tier) => tier === 'SSR' || tier === 'SR' || stats.money >= 10000,
     text: '朋友推荐了一个"稳赚不赔"的投资项目。',
     choices: [
-      {
-        text: 'All in!',
-        statChanges: (_stats: PlayerStats) => {
-          // 70%概率赚，30%概率亏
-          if (Math.random() < 0.7) {
-            return { money: 5000, mood: 10, intelligence: 2 };
-          } else {
-            return { money: -2000, mood: -10, karma: 2 };
-          }
-        },
-        followUp: (stats: Partial<PlayerStats>) => {
-          if ((stats.money || 0) > 0) {
-            return '投资有风险，你这次运气不错！';
-          } else {
-            return '市场暴跌，你亏损了。';
-          }
-        }
-      },
+      { text: 'All in!', statChanges: { money: -5000, mood: -20, karma: -10 }, followUp: '你被骗了，血本无归。' },
       { text: '谨慎观望', statChanges: { intelligence: 3 }, followUp: '后来听说那个项目暴雷了，你躲过一劫。' },
       { text: '推荐给别人', statChanges: { money: 500, karma: -20 }, followUp: '你赚了佣金，但失去了朋友。' },
     ],
@@ -1063,17 +1003,8 @@ export const eventLibrary: GameEvent[] = [
     cooldownYears: 5,
     text: '你谈恋爱了！',
     choices: [
-      {
-        text: '认真交往',
-        statChanges: (stats: PlayerStats) => {
-          if (stats.charm < 50) {
-            return { charm: 2, mood: 7, karma: 4, energy: -10 };
-          }
-          return { charm: 5, mood: 15, karma: 8, energy: -10 };
-        },
-        followUp: '你们的感情很稳定！'
-      },
-      { text: '随便玩玩', statChanges: { mood: 10, karma: -5, charm: 2, energy: -5 }, followUp: '恋爱让你开心，但有点不负责任。' },
+      { text: '认真交往', statChanges: { charm: 5, mood: 15, karma: 8, energy: -5 }, followUp: '你们的感情很稳定！' },
+      { text: '随便玩玩', statChanges: { mood: 10, karma: -5, charm: 2 }, followUp: '恋爱让你开心，但有点不负责任。' },
     ],
   },
   {
@@ -1213,9 +1144,8 @@ export const eventLibrary: GameEvent[] = [
     maxAge: 80,
     condition: (stats) => stats.luck >= 90,
     text: '【欧皇附体】你的运气太好了！买彩票中了大奖！',
-    weight: 1,
     choices: [
-      { text: '领奖去', statChanges: { money: 50000, mood: 30, luck: 1 }, followUp: '你一夜暴富！解锁了富甲一方成就！' },
+      { text: '领奖去', statChanges: { money: 100000, mood: 30, luck: 2 }, followUp: '你一夜暴富！解锁了富甲一方成就！' },
       { text: '不敢相信', statChanges: { mood: 10, intelligence: -2 }, followUp: '你以为是诈骗，错过了大奖...' },
     ],
   },
@@ -1400,10 +1330,9 @@ export const eventLibrary: GameEvent[] = [
     maxAge: 25,
     condition: (_, familyTier) => familyTier === 'SSR',
     text: '【SSR专属】你年满18岁，家族企业交给你打理了！',
-    weight: 1,
     choices: [
-      { text: '接受重任', statChanges: { money: 200000, intelligence: 10, charm: 10, energy: -20 }, followUp: '你成为了家族企业的继承人，人生巅峰！' },
-      { text: '另起炉灶', statChanges: { money: 80000, creativity: 15, karma: 10 }, followUp: '你拿着启动资金自己创业了！' },
+      { text: '接受重任', statChanges: { money: 500000, intelligence: 10, charm: 10, energy: -20 }, followUp: '你成为了家族企业的继承人，人生巅峰！' },
+      { text: '另起炉灶', statChanges: { money: 200000, creativity: 15, karma: 10 }, followUp: '你拿着启动资金自己创业了！' },
     ],
   },
   {
@@ -1412,7 +1341,6 @@ export const eventLibrary: GameEvent[] = [
     maxAge: 12,
     condition: (_, familyTier) => familyTier === 'SSR',
     text: '【SSR专属】父母要送你去贵族学校！',
-    weight: 1,
     choices: [
       { text: '开心上学', statChanges: { intelligence: 10, charm: 8, mood: 10 }, followUp: '你在贵族学校接受了最好的教育！' },
       { text: '想去普通学校', statChanges: { intelligence: 5, karma: 5, charm: -2 }, followUp: '你选择体验普通人的生活。' },
@@ -1424,9 +1352,8 @@ export const eventLibrary: GameEvent[] = [
     maxAge: 25,
     condition: (_, familyTier) => familyTier === 'SR',
     text: '【SR专属】父母给你买了一套房子！',
-    weight: 1,
     choices: [
-      { text: '感谢父母', statChanges: { money: 50000, mood: 20, karma: 10, charm: 5 }, followUp: '你有了自己的房子，生活更稳定了！' },
+      { text: '感谢父母', statChanges: { money: 0, mood: 20, karma: 10, charm: 5 }, followUp: '你有了自己的房子，生活更稳定了！' },
       { text: '自己奋斗', statChanges: { money: 50000, intelligence: 5, karma: 5 }, followUp: '你想靠自己，父母还是给了你一笔钱。' },
     ],
   },
@@ -1436,7 +1363,6 @@ export const eventLibrary: GameEvent[] = [
     maxAge: 22,
     condition: (_, familyTier) => familyTier === 'SR',
     text: '【SR专属】父母支持你出国留学！',
-    weight: 1,
     choices: [
       { text: '出国留学', statChanges: { intelligence: 15, charm: 10, creativity: 8, money: -100000 }, followUp: '你在国外开阔了眼界！' },
       { text: '国内发展', statChanges: { intelligence: 5, karma: 5, money: 50000 }, followUp: '你选择在国内发展。' },
@@ -1850,24 +1776,7 @@ export const randomEvents: GameEvent[] = [
     text: '股市大涨，你的股票翻倍了！',
     choices: [
       { text: '见好就收', statChanges: { money: 50000, mood: 20 }, followUp: '你落袋为安，心情大好。' },
-      {
-        text: '继续加仓',
-        statChanges: (_stats: PlayerStats) => {
-          // 70%概率亏，30%概率大赚
-          if (Math.random() < 0.7) {
-            return { money: -20000, mood: -20 };
-          } else {
-            return { money: 30000, mood: 30, intelligence: 5 };
-          }
-        },
-        followUp: (stats: Partial<PlayerStats>) => {
-          if ((stats.money || 0) > 0) {
-            return '抄底成功，赚得盆满钵满！';
-          } else {
-            return '股市暴跌，你血本无归。';
-          }
-        }
-      },
+      { text: '继续加仓', statChanges: { money: -30000, mood: -20 }, followUp: '股市暴跌，你被割了韭菜。' },
     ],
   },
   {
@@ -1876,17 +1785,7 @@ export const randomEvents: GameEvent[] = [
     maxAge: 50,
     text: '你遇到了初恋。',
     choices: [
-      {
-        text: '旧情复燃',
-        statChanges: (stats: PlayerStats) => {
-          if (stats.isMarried) {
-            return { mood: 15, karma: -15, money: -10000 };
-          } else {
-            return { mood: 20, charm: 5, karma: 3 };
-          }
-        },
-        followUp: '你与初恋重逢，发生了一些事情...'
-      },
+      { text: '旧情复燃', statChanges: { mood: 15, karma: -15, money: -10000 }, followUp: '你出轨了，家庭陷入危机。' },
       { text: '礼貌告别', statChanges: { karma: 5, mood: 5 }, followUp: '你守住了底线。' },
     ],
   },
@@ -1916,8 +1815,8 @@ export const randomEvents: GameEvent[] = [
     maxAge: 100,
     text: '下雨了，你没带伞。',
     choices: [
-      { text: '冒雨跑回家', statChanges: { health: -5, mood: 8, charm: 3, luck: 2, energy: -10 }, followUp: '你淋雨后偶遇了旧友，意外地开心！' },
-      { text: '等雨停', statChanges: { mood: 5, karma: 3, intelligence: 2, money: -30 }, followUp: '你买了杯咖啡，慢慢等雨停，看了会儿书。' },
+      { text: '冒雨跑回家', statChanges: { health: -5, mood: -5, energy: -8 }, followUp: '你淋湿了，可能会感冒。' },
+      { text: '等雨停', statChanges: { mood: -3, money: -30 }, followUp: '你买了杯咖啡，慢慢等雨停。' },
     ],
   },
   {
@@ -2036,17 +1935,8 @@ export const randomEvents: GameEvent[] = [
     maxAge: 100,
     text: '你帮助了一个陌生人。',
     choices: [
-      {
-        text: '热心帮助',
-        statChanges: (stats: PlayerStats) => {
-          if (stats.energy < 20) {
-            return { karma: 10, charm: 5, mood: 15, energy: -15, health: -5 };
-          }
-          return { karma: 10, charm: 5, mood: 15, energy: -15 };
-        },
-        followUp: '帮助别人让你很快乐！'
-      },
-      { text: '力所能及', statChanges: { karma: 5, mood: 8, energy: -5 }, followUp: '你做了力所能及的事。' },
+      { text: '热心帮助', statChanges: { karma: 10, charm: 5, mood: 15, energy: -5 }, followUp: '帮助别人让你很快乐！' },
+      { text: '力所能及', statChanges: { karma: 5, mood: 8 }, followUp: '你做了力所能及的事。' },
     ],
   },
   {
@@ -2054,7 +1944,6 @@ export const randomEvents: GameEvent[] = [
     minAge: 3,
     maxAge: 100,
     text: '你出门时踩到了狗屎，这是传说中的狗屎运吗？',
-    weight: 1,
     choices: [
       { text: '赶紧擦掉', statChanges: { mood: -5, luck: 3, karma: 1 }, followUp: '虽然有点恶心，但你感觉今天运气好像不错！' },
       { text: '自认倒霉', statChanges: { mood: -10, luck: 1 }, followUp: '你今天心情不太好，但好像也没更糟。' },

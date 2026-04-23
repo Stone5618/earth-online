@@ -30,8 +30,16 @@ export function ParticleBackground() {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
+    // Detect device performance
+    const detectPerformance = () => {
+      const cores = navigator.hardwareConcurrency || 4;
+      const memory = (navigator as any).deviceMemory || 4;
+      return cores < 4 || memory < 2;
+    };
+
     // Initialize particles
-    const particleCount = 60;
+    const isLowPerformance = detectPerformance();
+    const particleCount = isLowPerformance ? 18 : 60; // 30% of original count
     particlesRef.current = Array.from({ length: particleCount }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
@@ -112,7 +120,14 @@ export function ParticleBackground() {
       window.removeEventListener('mousemove', handleMouseMove);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
       }
+      // 清空画布
+      if (canvas && ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      // 清空粒子数组
+      particlesRef.current = [];
     };
   }, []);
 

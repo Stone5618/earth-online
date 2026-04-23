@@ -33,10 +33,15 @@ export function GlowingButton({
   return (
     <motion.button
       onClick={onClick}
+      onTouchEnd={(e) => {
+        e.preventDefault();
+        onClick?.();
+      }}
       className={`
         relative overflow-hidden rounded-xl font-medium
         border backdrop-blur-sm
         transition-all duration-300
+        min-h-[44px] min-w-[44px]
         ${variants[variant]}
         ${sizes[size]}
         ${pulse ? 'animate-pulse-glow' : ''}

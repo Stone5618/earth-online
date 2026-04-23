@@ -1,10 +1,11 @@
-import { useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScrollText, Milestone, AlertTriangle, Skull, Sparkles } from 'lucide-react';
 import { useGame } from '@/game/GameContext';
+import { formatMoney } from '@/game/gameState';
 import type { GameLog } from '@/game/gameState';
 
-function LogItem({ log, index, isRecent }: { log: GameLog; index: number; isRecent: boolean }) {
+const LogItem = React.memo(({ log, index, isRecent }: { log: GameLog; index: number; isRecent: boolean }) => {
   const getIcon = () => {
     switch (log.type) {
       case 'milestone':
@@ -45,13 +46,13 @@ function LogItem({ log, index, isRecent }: { log: GameLog; index: number; isRece
           duration: 0.3,
           delay: index * 0.05,
         }}
-        className={`p-4 rounded-xl border ${getBorderColor()} mb-3`}
+        className={`p-3 sm:p-4 rounded-xl border ${getBorderColor()} mb-2 sm:mb-3`}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-2 sm:gap-3">
           <div className="mt-0.5">{getIcon()}</div>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-holo-blue font-mono text-sm font-bold">
+              <span className="text-holo-blue font-mono text-xs sm:text-sm font-bold">
                 [Age. {log.year}]
               </span>
               {log.type === 'milestone' && (
@@ -69,10 +70,11 @@ function LogItem({ log, index, isRecent }: { log: GameLog; index: number; isRece
             
             {/* Stat changes */}
             {log.statChanges && Object.keys(log.statChanges).length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-1.5 sm:mt-2">
                 {Object.entries(log.statChanges).map(([key, value]) => {
                   if (value === 0) return null;
-                  const isPositive = value > 0;
+                  const isPositive = Number(value) > 0;
+                  const displayValue = typeof value === 'number' && key === 'money' ? formatMoney(value as number) : value;
                   return (
                     <span
                       key={key}
@@ -80,14 +82,13 @@ function LogItem({ log, index, isRecent }: { log: GameLog; index: number; isRece
                         isPositive ? 'text-green-400' : 'text-fatal-red'
                       }`}
                     >
-                      {isPositive ? '+' : ''}{value} {key === 'health' ? '健康' : 
-                        key === 'energy' ? '精力' : 
-                        key === 'money' ? '元' : 
-                        key === 'mood' ? '心情' : 
-                        key === 'intelligence' ? '智力' : 
-                        key === 'charm' ? '魅力' : 
-                        key === 'creativity' ? '创造力' : 
-                        key === 'luck' ? '运气' : 
+                      {isPositive ? '+' : ''}{displayValue} {key === 'health' ? '健康' :
+                        key === 'energy' ? '精力' :
+                        key === 'mood' ? '心情' :
+                        key === 'intelligence' ? '智力' :
+                        key === 'charm' ? '魅力' :
+                        key === 'creativity' ? '创造力' :
+                        key === 'luck' ? '运气' :
                         key === 'karma' ? '人品' : key}
                     </span>
                   );
@@ -102,13 +103,13 @@ function LogItem({ log, index, isRecent }: { log: GameLog; index: number; isRece
 
   return (
     <div
-      className={`p-4 rounded-xl border ${getBorderColor()} mb-3`}
+      className={`p-3 sm:p-4 rounded-xl border ${getBorderColor()} mb-2 sm:mb-3`}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2 sm:gap-3">
         <div className="mt-0.5">{getIcon()}</div>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-holo-blue font-mono text-sm font-bold">
+            <span className="text-holo-blue font-mono text-xs sm:text-sm font-bold">
               [Age. {log.year}]
             </span>
             {log.type === 'milestone' && (
@@ -126,10 +127,11 @@ function LogItem({ log, index, isRecent }: { log: GameLog; index: number; isRece
           
           {/* Stat changes */}
           {log.statChanges && Object.keys(log.statChanges).length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-1.5 sm:mt-2">
               {Object.entries(log.statChanges).map(([key, value]) => {
                 if (value === 0) return null;
-                const isPositive = value > 0;
+                const isPositive = Number(value) > 0;
+                const displayValue = typeof value === 'number' && key === 'money' ? formatMoney(value as number) : value;
                 return (
                   <span
                     key={key}
@@ -137,14 +139,13 @@ function LogItem({ log, index, isRecent }: { log: GameLog; index: number; isRece
                       isPositive ? 'text-green-400' : 'text-fatal-red'
                     }`}
                   >
-                    {isPositive ? '+' : ''}{value} {key === 'health' ? '健康' : 
-                      key === 'energy' ? '精力' : 
-                      key === 'money' ? '元' : 
-                      key === 'mood' ? '心情' : 
-                      key === 'intelligence' ? '智力' : 
-                      key === 'charm' ? '魅力' : 
-                      key === 'creativity' ? '创造力' : 
-                      key === 'luck' ? '运气' : 
+                    {isPositive ? '+' : ''}{displayValue} {key === 'health' ? '健康' :
+                      key === 'energy' ? '精力' :
+                      key === 'mood' ? '心情' :
+                      key === 'intelligence' ? '智力' :
+                      key === 'charm' ? '魅力' :
+                      key === 'creativity' ? '创造力' :
+                      key === 'luck' ? '运气' :
                       key === 'karma' ? '人品' : key}
                   </span>
                 );
@@ -155,7 +156,7 @@ function LogItem({ log, index, isRecent }: { log: GameLog; index: number; isRece
       </div>
     </div>
   );
-}
+});
 
 export function LogStream() {
   const { state } = useGame();
@@ -169,15 +170,15 @@ export function LogStream() {
   }, [state.logs.length]);
 
   return (
-    <div className="glass-card p-6 h-full flex flex-col">
-      <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+    <div className="glass-card p-4 sm:p-6 h-full flex flex-col">
+      <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2 mb-4">
         <ScrollText className="w-5 h-5 text-holo-blue" />
         命运文本流
       </h3>
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto pr-2 space-y-2 max-h-[500px]"
+        className="flex-1 overflow-y-auto pr-2 space-y-1.5 sm:space-y-2 max-h-[400px] sm:max-h-[500px]"
         style={{
           scrollbarWidth: 'thin',
           scrollbarColor: 'rgba(0, 210, 255, 0.3) transparent',
@@ -188,11 +189,11 @@ export function LogStream() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center py-12 text-white/40"
+              className="text-center py-8 sm:py-12 text-white/40"
             >
-              <ScrollText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>人生尚未开始...</p>
-              <p className="text-sm mt-2">点击"立即投胎"开启你的旅程</p>
+              <ScrollText className="w-10 sm:w-12 h-10 sm:h-12 mx-auto mb-3 sm:mb-4 opacity-50" />
+              <p className="text-sm sm:text-base">人生尚未开始...</p>
+              <p className="text-xs sm:text-sm mt-2">点击"立即投胎"开启你的旅程</p>
             </motion.div>
           ) : (
             state.logs.map((log, index) => (
