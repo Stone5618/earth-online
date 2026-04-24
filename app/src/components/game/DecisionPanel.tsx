@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GitFork, AlertCircle } from 'lucide-react';
+import { GitFork, AlertCircle, Heart, Zap, Coins, Smile, Brain, Sparkles, Palette, Clover } from 'lucide-react';
 import { useGame } from '@/game/GameContext';
 import { useToast } from './ToastNotification';
 import { GlowingButton } from '@/components/GlowingButton';
@@ -12,10 +12,68 @@ interface DecisionPanelProps {
   event: GameEvent | null;
 }
 
+// 紧凑属性条组件
+const CompactStatItem = ({ icon: Icon, value, max, color, label, prefix = "" }: {
+  icon: React.ElementType;
+  value: number;
+  max: number;
+  color: string;
+  label: string;
+  prefix?: string;
+}) => {
+  const percentage = Math.max(0, Math.min(100, (value / max) * 100));
+  const isLow = percentage < 30;
+  const isCritical = percentage < 15;
+  
+  return (
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1">
+          <Icon className="w-3 h-3" style={{ color }} />
+          <span className="text-[10px] text-white/60">{label}</span>
+        </div>
+        <span className={`text-[10px] font-mono ${isCritical ? 'text-fatal-red animate-pulse' : 'text-white/80'}`}>
+          {prefix}{value.toLocaleString()}
+        </span>
+      </div>
+      <div className="relative h-1.5 bg-white/10 rounded-full overflow-hidden">
+        <motion.div
+          className="absolute inset-y-0 left-0 rounded-full"
+          style={{ 
+            width: `${percentage}%`,
+            backgroundColor: color,
+            boxShadow: isLow ? `0 0 6px ${color}` : 'none',
+          }}
+          transition={{ duration: 0.3 }}
+        />
+      </div>
+    </div>
+  );
+};
+
+// 数值属性展示组件
+const NumericStatItem = ({ icon: Icon, value, color, label }: {
+  icon: React.ElementType;
+  value: number;
+  color: string;
+  label: string;
+}) => {
+  return (
+    <div className="flex items-center gap-1.5">
+      <Icon className="w-3.5 h-3.5" style={{ color }} />
+      <div>
+        <span className="text-[10px] text-white/60 block">{label}</span>
+        <span className="text-xs font-mono text-white">{value}</span>
+      </div>
+    </div>
+  );
+};
+
 export const DecisionPanel = React.memo(({ event }: DecisionPanelProps) => {
   const { tickYear, restAndRecover, state } = useGame();
   const { showToast } = useToast();
   const [resultModalOpen, setResultModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingChoice, setPendingChoice] = useState<{
     choiceText: string;
     statChanges: any;
@@ -36,22 +94,13 @@ export const DecisionPanel = React.memo(({ event }: DecisionPanelProps) => {
       let disabled = false;
       let disabledReason: string | undefined;
       
-      // 自动检查: 如果 statChanges 有金钱为负，且当前金钱小于绝对值
-      // 先临时计算一次 statChanges 看是否有金钱消耗
-      const tempStats = resolveStatChanges(choice.statChanges, state.stats);
-      const moneyCost = - (tempStats.money || 0);
-      if (moneyCost > 0 && state.stats.money < moneyCost) {
-        disabled = true;
-        disabledReason = `需要 ¥${moneyCost.toLocaleString()}`;
-      }
-      
       // 检查自定义 disabled 条件
-      if (!disabled && typeof choice.disabled === 'function') {
+      if (typeof choice.disabled === 'function') {
         if (choice.disabled(state.stats)) {
           disabled = true;
           disabledReason = choice.disabledReason;
         }
-      } else if (!disabled && typeof choice.disabled === 'boolean') {
+      } else if (typeof choice.disabled === 'boolean') {
         disabled = choice.disabled;
         disabledReason = choice.disabledReason;
       }
@@ -67,6 +116,7 @@ export const DecisionPanel = React.memo(({ event }: DecisionPanelProps) => {
 
   const handleChoice = (choiceIndex: number) => {
     if (!event) return;
+    if (isSubmitting) return;
     const choice = event.choices[choiceIndex];
     const resolvedChoice = resolvedChoices[choiceIndex];
     
@@ -102,9 +152,18 @@ export const DecisionPanel = React.memo(({ event }: DecisionPanelProps) => {
 
   const confirmChoice = () => {
     if (pendingChoice) {
-      tickYear(pendingChoice.choiceIndex, pendingChoice.event);
+      setIsSubmitting(true);
+      tickYear({
+        choiceIndex: pendingChoice.choiceIndex,
+        event: pendingChoice.event,
+        resolvedActionText: pendingChoice.choiceText,
+        resolvedStatChanges: pendingChoice.statChanges,
+        resolvedLogEventText: pendingChoice.followUp || pendingChoice.event.text
+      });
       setResultModalOpen(false);
       setPendingChoice(null);
+      // 这里不等异步结果（reducer同步），下一帧释放即可防连点
+      requestAnimationFrame(() => setIsSubmitting(false));
     }
   };
 
@@ -170,10 +229,88 @@ export const DecisionPanel = React.memo(({ event }: DecisionPanelProps) => {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2 mb-4">
+        <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2 mb-3">
           <GitFork className="w-5 h-5 text-holo-blue" />
-          命运抉择
+          命运生存控制台
         </h3>
+
+        {/* 紧凑基础属性面板 - 移动端优化 */}
+        <div className="p-2.5 sm:p-3 rounded-xl bg-white/5 border border-white/10 mb-4">
+          {/* 进度条属性 */}
+          <div className="grid grid-cols-2 gap-2.5 mb-3">
+            <CompactStatItem
+              icon={Heart}
+              label="健康"
+              value={state.stats.health}
+              max={state.stats.maxHealth}
+              color="#FF4B4B"
+            />
+            <CompactStatItem
+              icon={Zap}
+              label="精力"
+              value={state.stats.energy}
+              max={state.stats.maxEnergy}
+              color="#FF6B35"
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2.5 mb-3">
+            <CompactStatItem
+              icon={Smile}
+              label="心情"
+              value={state.stats.mood}
+              max={100}
+              color="#00FF88"
+            />
+            <CompactStatItem
+              icon={Coins}
+              label="金钱"
+              value={state.stats.money}
+              max={Math.max(100000, state.stats.money * 2)}
+              color="#FFD700"
+              prefix="¥"
+            />
+          </div>
+
+          {/* 分割线 */}
+          <div className="h-px bg-white/10 my-2.5" />
+
+          {/* 数值属性 */}
+          <div className="grid grid-cols-4 gap-1.5">
+            <NumericStatItem
+              icon={Brain}
+              label="智力"
+              value={state.stats.intelligence}
+              color="#00D2FF"
+            />
+            <NumericStatItem
+              icon={Sparkles}
+              label="魅力"
+              value={state.stats.charm}
+              color="#FF69B4"
+            />
+            <NumericStatItem
+              icon={Palette}
+              label="创造"
+              value={state.stats.creativity}
+              color="#A855F7"
+            />
+            <NumericStatItem
+              icon={Clover}
+              label="运气"
+              value={state.stats.luck}
+              color="#00FF88"
+            />
+          </div>
+
+          {/* 年龄信息 */}
+          <div className="flex items-center justify-center gap-2 mt-2.5 pt-2 border-t border-white/5">
+            <AlertCircle className="w-3.5 h-3.5 text-holo-blue/70" />
+            <span className="text-xs text-white/70">
+              当前年龄: <span className="font-bold text-white">{state.stats.age}岁</span>
+            </span>
+          </div>
+        </div>
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -184,13 +321,8 @@ export const DecisionPanel = React.memo(({ event }: DecisionPanelProps) => {
             transition={{ duration: 0.3 }}
             className="mb-6"
           >
-            <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 mb-4">
+            <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
               <p className="text-white leading-relaxed text-sm sm:text-base">{event.text}</p>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs sm:text-sm text-white/50">
-              <AlertCircle className="w-4 h-4" />
-              <span>当前年龄: {state.stats.age} 岁</span>
             </div>
           </motion.div>
         </AnimatePresence>
@@ -209,7 +341,7 @@ export const DecisionPanel = React.memo(({ event }: DecisionPanelProps) => {
                   onClick={() => handleChoice(index)}
                   variant="secondary"
                   className={`w-full text-left justify-start min-h-[56px] py-3 sm:py-4 px-3 sm:px-4 active:scale-[0.97] touch-manipulation ${
-                    choice.disabled ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
+                    choice.disabled || isSubmitting ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
                   }`}
                 >
                   <div className="flex-1">

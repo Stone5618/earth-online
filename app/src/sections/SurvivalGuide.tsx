@@ -37,7 +37,7 @@ export function SurvivalGuide({ isOpen, onClose }: SurvivalGuideProps) {
                 <BookOpen className="w-10 h-10 text-holo-blue" />
                 <div>
                   <h2 className="text-3xl font-bold text-white">生存指南</h2>
-                  <p className="text-white/50">地球Online v1.0.0 游戏完全攻略</p>
+                  <p className="text-white/50">地球Online v2.0.0 游戏完全攻略</p>
                 </div>
               </div>
 

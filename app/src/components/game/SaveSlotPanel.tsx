@@ -100,10 +100,10 @@ export function SaveSlotPanel({ isOpen, onClose, mode }: SaveSlotPanelProps) {
             initial={{ opacity: 0, scale: 0.9, y: 50 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 50 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[2001] w-full max-w-lg px-4"
+            className="fixed inset-0 z-[2001] flex items-center justify-center p-4"
           >
             <div 
-              className="glass-card p-6 relative max-h-[80vh] overflow-y-auto"
+              className="glass-card p-6 relative w-full max-w-md max-h-[80vh] overflow-y-auto"
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}

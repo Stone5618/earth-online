@@ -73,8 +73,14 @@ const LogItem = React.memo(({ log, index, isRecent }: { log: GameLog; index: num
               <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-1.5 sm:mt-2">
                 {Object.entries(log.statChanges).map(([key, value]) => {
                   if (value === 0) return null;
+                  // 只渲染简单类型的值，跳过复杂对象
+                  if (typeof value === 'object' && value !== null) return null;
+                  if (Array.isArray(value)) return null;
+                  
                   const isPositive = Number(value) > 0;
-                  const displayValue = typeof value === 'number' && key === 'money' ? formatMoney(value as number) : value;
+                  const displayValue = typeof value === 'number' && key === 'money' 
+                    ? formatMoney(value as number) 
+                    : String(value);
                   return (
                     <span
                       key={key}
@@ -130,8 +136,14 @@ const LogItem = React.memo(({ log, index, isRecent }: { log: GameLog; index: num
             <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-1.5 sm:mt-2">
               {Object.entries(log.statChanges).map(([key, value]) => {
                 if (value === 0) return null;
+                // 只渲染简单类型的值，跳过复杂对象
+                if (typeof value === 'object' && value !== null) return null;
+                if (Array.isArray(value)) return null;
+                
                 const isPositive = Number(value) > 0;
-                const displayValue = typeof value === 'number' && key === 'money' ? formatMoney(value as number) : value;
+                const displayValue = typeof value === 'number' && key === 'money' 
+                  ? formatMoney(value as number) 
+                  : String(value);
                 return (
                   <span
                     key={key}

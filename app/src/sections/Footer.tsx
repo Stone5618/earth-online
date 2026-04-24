@@ -38,7 +38,7 @@ export function Footer() {
 
           {/* Version */}
           <p className="text-white/30 text-xs mt-6 font-mono">
-            v1.0 · Build 2024.01.01 · Server: Earth-Main
+            v2.0 · Build 2026.01.01 · Server: Earth-Main
           </p>
         </motion.div>
       </div>

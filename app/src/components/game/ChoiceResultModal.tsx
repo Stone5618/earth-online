@@ -50,7 +50,26 @@ export function ChoiceResultModal(props: ChoiceResultModalProps) {
     );
   };
 
-  const hasChanges = Object.keys(statChanges).length > 0;
+  // 过滤掉非数值属性，特别过滤掉skills对象
+  const filteredChanges = Object.entries(statChanges)
+    .filter(([key, value]) => {
+      // 过滤掉skills对象
+      if (key === 'skills') return false;
+      // 只保留数值类型
+      return typeof value === 'number';
+    });
+  
+  const hasChanges = filteredChanges.length > 0;
+  
+  // 处理技能变化的辅助函数
+  const getSkillChanges = () => {
+    if (!statChanges.skills || typeof statChanges.skills !== 'object') return [];
+    return Object.entries(statChanges.skills)
+      .filter(([_, value]) => typeof value === 'number' && value !== 0);
+  };
+  
+  const skillChanges = getSkillChanges();
+  const hasSkillChanges = skillChanges.length > 0;
 
   return (
     <AnimatePresence>
@@ -105,9 +124,46 @@ export function ChoiceResultModal(props: ChoiceResultModalProps) {
                 <div className="mb-6">
                   <p className="text-white/50 text-sm mb-3">属性变化</p>
                   <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2">
-                    {Object.entries(statChanges).map(([key, value]) => 
+                    {filteredChanges.map(([key, value]) => 
                       formatStatChange(key, value as number)
                     )}
+                  </div>
+                </div>
+              )}
+              
+              {hasSkillChanges && (
+                <div className="mb-6">
+                  <p className="text-white/50 text-sm mb-3">技能变化</p>
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2">
+                    {skillChanges.map(([skillKey, value]) => {
+                      const skillLabels: Record<string, string> = {
+                        programming: '编程',
+                        investing: '投资',
+                        medicine: '医疗',
+                        speech: '演讲',
+                        romance: '恋爱',
+                        management: '管理',
+                        fitness: '健身',
+                        driving: '驾驶',
+                        cooking: '烹饪',
+                        painting: '绘画',
+                        music: '音乐',
+                        entrepreneurship: '创业',
+                        academics: '学术',
+                        athletics: '体育'
+                      };
+                      const label = skillLabels[skillKey] || skillKey;
+                      const numValue = value as number;
+                      const colorClass = numValue > 0 ? 'text-green-400' : numValue < 0 ? 'text-red-400' : 'text-white/50';
+                      const prefix = numValue > 0 ? '+' : '';
+                      
+                      return (
+                        <div key={skillKey} className={`flex items-center justify-between ${colorClass}`}>
+                          <span>{label}</span>
+                          <span className="font-mono">{prefix}{numValue}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

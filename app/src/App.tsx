@@ -1,14 +1,19 @@
 import { Suspense, lazy, useState } from 'react';
 import { AnimatePresence, MotionConfig } from 'framer-motion';
 import { GameProvider, useGame } from '@/game/GameContext';
-import { generateFamilyTier, generateInitialStats } from '@/game/gameState';
+import { generateFamilyTier, generateInitialStats } from '@/game/core/gameInitializer';
+import type { BirthConfig } from '@/game/core/gameInitializer';
 import { Loading } from '@/components/Loading';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ParticleBackground } from '@/components/ParticleBackground';
 import { Header } from '@/sections/Header';
 import { Hero } from '@/sections/Hero';
 import { Footer } from '@/sections/Footer';
-import { Settings, Play } from 'lucide-react';
+import { Settings, Play, Save, Book } from 'lucide-react';
+import { BackgroundSelector, type BackgroundChoice } from '@/components/game/BackgroundSelector';
+import { TALENTS } from '@/config/gameConfig';
+import { ToastProvider } from '@/components/game/ToastNotification';
+import { SoundProvider } from '@/components/game/SoundManager';
 import './App.css';
 
 // Lazy loading components
@@ -27,8 +32,6 @@ const AchievementNotificationProvider = lazy(() => import('@/components/game/Ach
 const SaveSlotPanel = lazy(() => import('@/components/game/SaveSlotPanel').then(m => ({ default: m.SaveSlotPanel })));
 const SettingsPanel = lazy(() => import('@/components/game/SettingsPanel').then(m => ({ default: m.SettingsPanel })));
 const SurvivalGuide = lazy(() => import('@/sections/SurvivalGuide').then(m => ({ default: m.SurvivalGuide })));
-const ToastProvider = lazy(() => import('@/components/game/ToastNotification').then(m => ({ default: m.ToastProvider })));
-const SoundProvider = lazy(() => import('@/components/game/SoundManager').then(m => ({ default: m.SoundProvider })));
 
 // Predefined servers and talents
 const servers = [
@@ -43,17 +46,6 @@ const servers = [
   '北美服务器 - 美国西部',
 ];
 
-const talents = [
-  '乐感极佳',
-  '运动天赋',
-  '数学直觉',
-  '语言天赋',
-  '艺术感知',
-  '社交魅力',
-  '逻辑思维',
-  '空间想象',
-];
-
 // Main game content component
 function GameContent() {
   const { state, startSpawning } = useGame();
@@ -61,18 +53,81 @@ function GameContent() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [savePanelMode, setSavePanelMode] = useState<'save' | 'load'>('load');
+  const [showBackgroundSelector, setShowBackgroundSelector] = useState(false);
 
-  // Direct spawning with random server and talent
+  // Spawn with background selection
   const handleSpawn = () => {
+    setShowBackgroundSelector(true);
+  };
+
+  const handleBackgroundComplete = (choice: BackgroundChoice) => {
+    setShowBackgroundSelector(false);
+
     const randomServer = servers[Math.floor(Math.random() * servers.length)];
-    const randomTalent = talents[Math.floor(Math.random() * talents.length)];
-    const familyTier = generateFamilyTier();
-    const initialStats = generateInitialStats(familyTier);
-    startSpawning(randomServer, randomTalent, familyTier, initialStats);
+    const talentName = choice.selectedTalent 
+      ? TALENTS.find(t => t.id === choice.selectedTalent)?.name || '随机天赋' 
+      : '随机天赋';
+    
+    let familyTier = generateFamilyTier();
+    
+    // 使用新的出生系统
+    const birthConfig: BirthConfig = {
+      familyTier: familyTier,
+      familyOccupation: choice.familyOccupation as any,
+      selectedTalent: choice.selectedTalent,
+      selectedFlaw: choice.selectedFlaw
+    };
+    
+    let initialStats = generateInitialStats(familyTier, birthConfig);
+
+    startSpawning(randomServer, talentName, familyTier, initialStats, choice.challenge);
   };
 
   return (
     <div className="relative min-h-screen bg-deep-space text-white overflow-x-hidden">
+      {/* 顶部右侧按钮 - 仅在桌面端可见 */}
+      <div className="hidden lg:flex fixed top-24 right-4 z-50 flex gap-2">
+        {state.phase === 'PLAYING' && (
+          <>
+            <button
+              onClick={() => {
+                setSavePanelMode('save');
+                setIsSavePanelOpen(true);
+              }}
+              className="px-4 py-2 bg-holo-blue/20 border border-holo-blue/50 rounded-lg text-holo-blue hover:bg-holo-blue/30 transition-all flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />
+              保存游戏
+            </button>
+            <button
+              onClick={() => setIsGuideOpen(true)}
+              className="px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2"
+            >
+              <Book className="w-4 h-4" />
+              指南
+            </button>
+          </>
+        )}
+        {state.phase === 'LANDING' && (
+          <button
+            onClick={() => {
+              setSavePanelMode('load');
+              setIsSavePanelOpen(true);
+            }}
+            className="px-4 py-2 bg-holo-blue/20 border border-holo-blue/50 rounded-lg text-holo-blue hover:bg-holo-blue/30 transition-all flex items-center gap-2"
+          >
+            <Play className="w-4 h-4" />
+            继续游戏
+          </button>
+        )}
+        <button
+          onClick={() => setIsSettingsOpen(true)}
+          className="p-2 bg-white/5 border border-white/20 rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition-all"
+        >
+          <Settings className="w-5 h-5" />
+        </button>
+      </div>
+      
       {/* Achievement Notification (always load) */}
       <Suspense fallback={<Loading />}>
         <AchievementNotificationProvider />
@@ -80,6 +135,13 @@ function GameContent() {
       
       {/* Particle Background - only show in landing phase */}
       {state.phase === 'LANDING' && <ParticleBackground />}
+      
+      {/* Background Selector */}
+      <AnimatePresence>
+        {showBackgroundSelector && (
+          <BackgroundSelector onComplete={handleBackgroundComplete} />
+        )}
+      </AnimatePresence>
       
       {/* Spawn Transition */}
       <AnimatePresence>
@@ -92,52 +154,17 @@ function GameContent() {
 
       {/* Game HUD - only show in playing or gameover phase */}
       {(state.phase === 'PLAYING' || state.phase === 'GAMEOVER') && (
-        <Suspense fallback={<Loading />}>
-          <GameHUD />
-        </Suspense>
+        <>
+          <Suspense fallback={<Loading />}>
+            <GameHUD />
+          </Suspense>
+        </>
       )}
 
       {/* Landing Page Content */}
       {state.phase === 'LANDING' && (
         <>
           <Header onSpawnClick={handleSpawn} />
-          
-          {/* Top Right Buttons */}
-          <div className="fixed top-24 right-4 z-50 flex gap-2">
-            <button
-              onClick={() => {
-                setSavePanelMode('load');
-                setIsSavePanelOpen(true);
-              }}
-              className="px-4 py-2 bg-holo-blue/20 border border-holo-blue/50 rounded-lg text-holo-blue hover:bg-holo-blue/30 transition-all flex items-center gap-2"
-            >
-              <Play className="w-4 h-4" />
-              继续游戏
-            </button>
-            <button
-              onClick={() => setIsSettingsOpen(true)}
-              className="p-2 bg-white/5 border border-white/20 rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition-all"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
-          </div>
-          
-          {/* Panels */}
-          <Suspense fallback={<Loading />}>
-            <SaveSlotPanel
-              isOpen={isSavePanelOpen}
-              onClose={() => setIsSavePanelOpen(false)}
-              mode={savePanelMode}
-            />
-            <SettingsPanel
-              isOpen={isSettingsOpen}
-              onClose={() => setIsSettingsOpen(false)}
-            />
-            <SurvivalGuide
-              isOpen={isGuideOpen}
-              onClose={() => setIsGuideOpen(false)}
-            />
-          </Suspense>
           
           <main className="relative z-10">
             <Hero onSpawnClick={handleSpawn} onGuideClick={() => setIsGuideOpen(true)} />
@@ -157,6 +184,23 @@ function GameContent() {
           <Footer />
         </>
       )}
+      
+      {/* 所有阶段的面板 */}
+      <Suspense fallback={<Loading />}>
+        <SaveSlotPanel
+          isOpen={isSavePanelOpen}
+          onClose={() => setIsSavePanelOpen(false)}
+          mode={savePanelMode}
+        />
+        <SettingsPanel
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+        />
+        <SurvivalGuide
+          isOpen={isGuideOpen}
+          onClose={() => setIsGuideOpen(false)}
+        />
+      </Suspense>
     </div>
   );
 }
@@ -165,17 +209,13 @@ function App() {
   return (
     <ErrorBoundary>
       <MotionConfig reducedMotion="user">
-        <GameProvider>
-          <Suspense fallback={<Loading />}>
-            <SoundProvider>
-              <Suspense fallback={<Loading />}>
-                <ToastProvider>
-                  <GameContent />
-                </ToastProvider>
-              </Suspense>
-            </SoundProvider>
-          </Suspense>
-        </GameProvider>
+        <ToastProvider>
+          <SoundProvider>
+            <GameProvider>
+              <GameContent />
+            </GameProvider>
+          </SoundProvider>
+        </ToastProvider>
       </MotionConfig>
     </ErrorBoundary>
   );

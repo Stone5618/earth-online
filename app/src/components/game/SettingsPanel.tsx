@@ -1,9 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings, Volume2, VolumeX, Save, RotateCcw } from 'lucide-react';
+import { X, Settings, Volume2, VolumeX, Save, RotateCcw, Skull } from 'lucide-react';
 import { useToast } from './ToastNotification';
 import { useSound } from './SoundManager';
 import { useGame } from '@/game/GameContext';
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction
+} from '@/components/ui/alert-dialog';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -13,9 +24,10 @@ interface SettingsPanelProps {
 export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const { showToast } = useToast();
   const { isSoundEnabled, toggleSound } = useSound();
-  const { state, setDifficulty: setGameDifficulty } = useGame();
+  const { state, setDifficulty: setGameDifficulty, resetGame } = useGame();
   const [touchStart, setTouchStart] = React.useState({ x: 0, y: 0 });
   const [touchEnd, setTouchEnd] = React.useState({ x: 0, y: 0 });
+  const [confirmResetGame, setConfirmResetGame] = useState(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
@@ -46,6 +58,13 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     }
     setGameDifficulty('normal');
     showToast('设置已重置！', 'info');
+  };
+
+  const handleResetGame = () => {
+    resetGame();
+    setConfirmResetGame(false);
+    onClose();
+    showToast('游戏已重置！新的人生即将开始', 'success');
   };
 
   return (
@@ -140,24 +159,54 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={resetSettings}
-                    className="flex-1 py-3 min-h-[44px] rounded-lg bg-white/5 border border-white/20 text-white/60 hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    重置
-                  </button>
-                  <button
-                    onClick={() => {
-                      saveSettings();
-                      onClose();
-                    }}
-                    className="flex-1 py-3 min-h-[44px] rounded-lg bg-holo-blue/20 border border-holo-blue/50 text-holo-blue hover:bg-holo-blue/30 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Save className="w-4 h-4" />
-                    保存
-                  </button>
+                <div className="space-y-3 pt-4">
+                  <div className="flex gap-3">
+                    <button
+                      onClick={resetSettings}
+                      className="flex-1 py-3 min-h-[44px] rounded-lg bg-white/5 border border-white/20 text-white/60 hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      重置设置
+                    </button>
+                    <button
+                      onClick={() => {
+                        saveSettings();
+                        onClose();
+                      }}
+                      className="flex-1 py-3 min-h-[44px] rounded-lg bg-holo-blue/20 border border-holo-blue/50 text-holo-blue hover:bg-holo-blue/30 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Save className="w-4 h-4" />
+                      保存
+                    </button>
+                  </div>
+                  
+                  {/* Reset Game Button with Confirmation */}
+                  <AlertDialog open={confirmResetGame} onOpenChange={setConfirmResetGame}>
+                    <AlertDialogTrigger asChild>
+                      <button
+                        className="w-full py-3 min-h-[44px] rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Skull className="w-4 h-4" />
+                        重置游戏
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="glass-card bg-zinc-900 border-zinc-700 text-white">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-white">重置游戏？</AlertDialogTitle>
+                        <AlertDialogDescription className="text-white/60">
+                          您确定要重置当前人生并重新开始吗？所有进度将丢失，此操作不可恢复！
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+                          取消
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={handleResetGame} className="bg-red-500 hover:bg-red-600">
+                          确认重置
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             </div>

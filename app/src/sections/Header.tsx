@@ -75,7 +75,7 @@ export function Header({ onSpawnClick }: HeaderProps) {
                 EarthOnline
               </span>
               <span className="text-xs text-holo-blue/70 font-mono">
-                v1.0
+                v2.0
               </span>
             </div>
           </motion.div>

@@ -1,11 +1,15 @@
 import { motion } from 'framer-motion';
-import { Skull, RotateCcw, Home, Trophy, Activity, Heart, Star } from 'lucide-react';
+import { Skull, RotateCcw, Home, Trophy, Activity, Heart, Star, CheckCircle2, XCircle } from 'lucide-react';
 import { useGame } from '@/game/GameContext';
 import { GlowingButton } from '@/components/GlowingButton';
+import { determineEnding } from '@/game/gameState';
 
 export function DeathScreen() {
   const { state, resetGame } = useGame();
-  const { stats, logs, achievements } = state;
+  const { stats, logs, achievements, challenge, challengeVictory } = state;
+
+  // 判定结局
+  const ending = determineEnding(stats);
 
   const avgMood = Math.min(100, Math.max(0, Math.round(stats.mood)));
   const majorEventsCount = logs.filter(l => l.type === 'milestone').length;
@@ -30,39 +34,107 @@ export function DeathScreen() {
         className="relative z-10 max-w-4xl w-full my-4"
       >
         <div className="glass-card p-6 md:p-8 border-fatal-red/30">
-          <div className="text-center mb-8">
+          {/* 挑战结果 */}
+          {challenge && (
             <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 200 }}
-              className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-6 rounded-full bg-fatal-red/20 border-2 border-fatal-red/50 flex items-center justify-center"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 text-center"
             >
-              <Skull className="w-10 h-10 md:w-12 md:h-12 text-fatal-red" />
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <span className="text-2xl md:text-3xl">{challenge.icon}</span>
+                <h2 className="text-xl md:text-2xl font-bold text-white">{challenge.name}</h2>
+              </div>
+              <p className="text-white/70 mb-4">{challenge.description}</p>
+              {challengeVictory !== undefined && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: 'spring' }}
+                  className={`inline-flex items-center gap-2 px-6 py-3 rounded-full ${
+                    challengeVictory 
+                      ? 'bg-green-500/20 border border-green-500/50 text-green-400' 
+                      : 'bg-red-500/20 border border-red-500/50 text-red-400'
+                  }`}
+                >
+                  {challengeVictory ? (
+                    <>
+                      <CheckCircle2 className="w-6 h-6" />
+                      <span className="text-lg font-bold">挑战成功！</span>
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="w-6 h-6" />
+                      <span className="text-lg font-bold">挑战失败</span>
+                    </>
+                  )}
+                </motion.div>
+              )}
             </motion.div>
+          )}
+
+          <div className="text-center mb-8">
+            {/* 根据结局类型展示不同图标 */}
+            {ending ? (
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 200 }}
+                className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-6 rounded-full bg-holo-blue/20 border-2 border-holo-blue/50 flex items-center justify-center"
+              >
+                <span className="text-4xl md:text-5xl">{ending.icon}</span>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 200 }}
+                className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-6 rounded-full bg-fatal-red/20 border-2 border-fatal-red/50 flex items-center justify-center"
+              >
+                <Skull className="w-10 h-10 md:w-12 md:h-12 text-fatal-red" />
+              </motion.div>
+            )}
             
-            <h1 className="text-3xl md:text-4xl font-bold text-fatal-red mb-2">
-              游戏结束
-            </h1>
-            <p className="text-white/60 mb-4">
-              {state.deathReason}
-            </p>
-            
-            {state.finalTitle && (
+            {ending ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
                 className="mb-6"
               >
-                <p className="text-gold text-xl md:text-2xl font-bold">
-                  {state.finalTitle}
+                <h1 className="text-3xl md:text-4xl font-bold text-gold mb-2">
+                  {ending.name}
+                </h1>
+                <p className="text-white/80 text-lg md:text-xl">
+                  {ending.description}
                 </p>
-                {state.finalComment && (
-                  <p className="text-white/50 mt-2 italic text-sm md:text-base">
-                    "{state.finalComment}"
-                  </p>
-                )}
               </motion.div>
+            ) : (
+              <>
+                <h1 className="text-3xl md:text-4xl font-bold text-fatal-red mb-2">
+                  游戏结束
+                </h1>
+                <p className="text-white/60 mb-4">
+                  {state.deathReason}
+                </p>
+                
+                {state.finalTitle && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="mb-6"
+                  >
+                    <p className="text-gold text-xl md:text-2xl font-bold">
+                      {state.finalTitle}
+                    </p>
+                    {state.finalComment && (
+                      <p className="text-white/50 mt-2 italic text-sm md:text-base">
+                        "{state.finalComment}"
+                      </p>
+                    )}
+                  </motion.div>
+                )}
+              </>
             )}
           </div>
 
