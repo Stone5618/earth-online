@@ -1,0 +1,93 @@
+/* App-specific styles */
+
+/* Smooth scrolling for the entire page */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom selection color */
+::selection {
+  background: rgba(0, 210, 255, 0.3);
+  color: white;
+}
+
+/* Ensure sections have proper spacing */
+section {
+  position: relative;
+}
+
+/* Glass card enhancements */
+.glass-card {
+  will-change: transform;
+}
+
+/* Animation performance */
+.animate-pulse-glow,
+.animate-float,
+.animate-spin-slow,
+.animate-shimmer {
+  will-change: transform, opacity;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .section-title {
+    font-size: 1.75rem;
+  }
+  
+  .section-subtitle {
+    font-size: 0.875rem;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High contrast mode */
+.high-contrast {
+  --text-primary: #FFFFFF !important;
+  --text-secondary: #E0E0E0 !important;
+  --border-color: #FFFFFF !important;
+}
+
+.high-contrast .text-white\/60,
+.high-contrast .text-white\/70,
+.high-contrast .text-white\/80 {
+  color: #E0E0E0 !important;
+}
+
+.high-contrast .text-game-text-secondary {
+  color: #CCCCCC !important;
+}
+
+.high-contrast .border-white\/10,
+.high-contrast .border-white\/15,
+.high-contrast .border-white\/20 {
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.high-contrast .bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Font size adjustments */
+html[data-font-size="small"] {
+  font-size: 14px;
+}
+
+html[data-font-size="normal"] {
+  font-size: 16px;
+}
+
+html[data-font-size="large"] {
+  font-size: 18px;
+}
